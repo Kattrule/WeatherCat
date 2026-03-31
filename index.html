@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VäderKatt</title>
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #ffffff;
+            --accent: #38bdf8;
+            --text-muted: #94a3b8;
+        }
+
+        * { color: var(--text-color); font-family: Arial, sans-serif; box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; min-height: 100%; background: var(--bg-color); }
+        
+        .app-container { max-width: 500px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .header { text-align: center; padding: 10px 0; }
+        .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
+        .header p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        .current-weather { background: var(--card-bg); padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
+        .emoji-large { font-size: 5rem; margin: 10px 0; }
+        .temp-large { font-size: 4rem; font-weight: bold; margin: 0; }
+        .weather-desc { color: var(--accent); font-size: 1.2rem; margin-top: 5px; text-transform: capitalize; }
+        .details-row { display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .detail-item { display: flex; flex-direction: column; gap: 5px; font-size: 1rem; }
+        .detail-item span:last-child { color: var(--text-muted); font-size: 0.85rem; }
+
+        .forecast-title { margin: 10px 0 0 0; font-size: 1.2rem; }
+        
+        .forecast-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .forecast-scroll::-webkit-scrollbar { display: none; }
+        
+        .forecast-card { background: var(--card-bg); padding: 15px; border-radius: 15px; min-width: 80px; text-align: center; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05); }
+        .forecast-time { color: var(--text-muted); font-size: 0.9rem; }
+        .forecast-emoji { font-size: 1.8rem; }
+        .forecast-temp { font-weight: bold; font-size: 1.1rem; }
+
+        .loading { text-align: center; padding: 50px; font-size: 1.2rem; color: var(--accent); }
+        .btn-refresh { background: var(--accent); color: var(--bg-color) !important; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+    <div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>
+</div>
+
+<script>
+    // SMHI väderkoder till Emojis och text
+    const weatherMap = {
+        1: { emoji: '☀️', text: 'Klart' },
+        2: { emoji: '🌤️', text: 'Lätt molnighet' },
+        3: { emoji: '⛅', text: 'Halvklart' },
+        4: { emoji: '🌥️', text: 'Molnigt' },
+        5: { emoji: '☁️', text: 'Mycket moln' },
+        6: { emoji: '☁️', text: 'Mulet' },
+        7: { emoji: '🌫️', text: 'Dimma' },
+        8: { emoji: '🌦️', text: 'Lätta regnskurar' },
+        9: { emoji: '🌧️', text: 'Regnskurar' },
+        10: { emoji: '⛈️', text: 'Kraftiga regnskurar' },
+        11: { emoji: '🌩️', text: 'Åska' },
+        12: { emoji: '🌨️', text: 'Lätta byar av snöblandat regn' },
+        13: { emoji: '🌨️', text: 'Byar av snöblandat regn' },
+        14: { emoji: '🌨️', text: 'Kraftiga byar av snöblandat regn' },
+        15: { emoji: '❄️', text: 'Lätta snöbyar' },
+        16: { emoji: '❄️', text: 'Snöbyar' },
+        17: { emoji: '❄️', text: 'Kraftiga snöbyar' },
+        18: { emoji: '🌧️', text: 'Lätt regn' },
+        19: { emoji: '🌧️', text: 'Regn' },
+        20: { emoji: '⛈️', text: 'Kraftigt regn' },
+        21: { emoji: '🌩️', text: 'Åska' },
+        22: { emoji: '🌨️', text: 'Lätt snöblandat regn' },
+        23: { emoji: '🌨️', text: 'Snöblandat regn' },
+        24: { emoji: '🌨️', text: 'Kraftigt snöblandat regn' },
+        25: { emoji: '❄️', text: 'Lätt snöfall' },
+        26: { emoji: '❄️', text: 'Snöfall' },
+        27: { emoji: '❄️', text: 'Kraftigt snöfall' }
+    };
+
+    // Hjälpfunktion för att plocka ut rätt värde ur SMHIs krångliga dataformat
+    function getParam(parameters, name) {
+        const param = parameters.find(p => p.name === name);
+        return param ? param.values[0] : 0;
+    }
+
+    // Formatera tid från "2023-10-15T14:00:00Z" till "14:00"
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Bygg hela gränssnittet när vi har fått datan
+    function renderApp(data, isFallback) {
+        const app = document.getElementById('app');
+        
+        // Nuvarande väder (första värdet i listan)
+        const current = data.timeSeries[0];
+        const temp = getParam(current.parameters, 't');
+        const wind = getParam(current.parameters, 'ws');
+        const weatherCode = getParam(current.parameters, 'Wsymb2');
+        const weatherInfo = weatherMap[weatherCode] || { emoji: '❓', text: 'Okänt' };
+
+        // Skapa HTML för 24-timmars prognosen
+        let forecastHTML = '';
+        // Vi hoppar över det allra första värdet (index 0) eftersom det är nu, och tar de kommande 24
+        for(let i = 1; i <= 24; i++) {
+            if(!data.timeSeries[i]) break;
+            const fData = data.timeSeries[i];
+            const fTemp = getParam(fData.parameters, 't');
+            const fCode = getParam(fData.parameters, 'Wsymb2');
+            const fEmoji = weatherMap[fCode] ? weatherMap[fCode].emoji : '❓';
+            
+            forecastHTML += `
+                <div class="forecast-card">
+                    <span class="forecast-time">${formatTime(fData.validTime)}</span>
+                    <span class="forecast-emoji">${fEmoji}</span>
+                    <span class="forecast-temp">${fTemp}°</span>
+                </div>
+            `;
+        }
+
+        app.innerHTML = `
+            <div class="header">
+                <h1>SMHI Väder</h1>
+                <p>${isFallback ? 'Visar väder för Stockholm (Plats ej angiven)' : 'Lokal prognos'}</p>
+            </div>
+
+            <div class="current-weather">
+                <div class="emoji-large">${weatherInfo.emoji}</div>
+                <h2 class="temp-large">${temp}°</h2>
+                <div class="weather-desc">${weatherInfo.text}</div>
+                
+                <div class="details-row">
+                    <div class="detail-item">
+                        <span>${wind} m/s</span>
+                        <span>Vind</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="forecast-title">Kommande 24 timmar</h3>
+            <div class="forecast-scroll">
+                ${forecastHTML}
+            </div>
+
+            <button class="btn-refresh" onclick="initApp()">Uppdatera väder</button>
+        `;
+    }
+
+    // Hämta väder från SMHI
+    async function fetchWeather(lat, lon, isFallback) {
+        try {
+            // SMHI kräver att lat/lon har max 6 decimaler
+            const safeLat = lat.toFixed(4);
+            const safeLon = lon.toFixed(4);
+            const url = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${safeLon}/lat/${safeLat}/data.json`;
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Kunde inte hämta data");
+            const data = await response.json();
+            renderApp(data, isFallback);
+        } catch (error) {
+            document.getElementById('app').innerHTML = `<div class="loading" style="color:#ef4444;">Något gick fel vid hämtning från SMHI.<br><br><button class="btn-refresh" onclick="initApp()">Försök igen</button></div>`;
+        }
+    }
+
+    // Starta appen och be om plats
+    function initApp() {
+        document.getElementById('app').innerHTML = `<div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>`;
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // Användaren tillät GPS
+                    fetchWeather(position.coords.latitude, position.coords.longitude, false);
+                },
+                (error) => {
+                    // Användaren nekade GPS eller det blev fel - använd Stockholm som fallback
+                    fetchWeather(59.3293, 18.0686, true);
+                },
+                { timeout: 10000 } // Ge upp GPS efter 10 sekunder
+            );
+        } else {
+            // Webbläsaren stöder inte GPS
+            fetchWeather(59.3293, 18.0686, true);
+        }
+    }
+
+    // Kör igång!
+    window.onload = initApp;
+</script>
+</body>
+</html>
