@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VäderKatt</title>
+    <title>Väder Katt</title>
     
     <style>
         :root {
@@ -17,7 +17,16 @@
         * { color: var(--text-color); font-family: Arial, sans-serif; box-sizing: border-box; }
         body, html { margin: 0; padding: 0; min-height: 100%; background: var(--bg-color); }
         
-        .app-container { max-width: 500px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .main-wrapper { max-width: 500px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        
+        /* Ny CSS för sökfältet */
+        .search-box { display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-color); font-size: 1rem; outline: none; }
+        .search-input:focus { border-color: var(--accent); }
+        .search-btn { background: var(--accent); color: var(--bg-color) !important; border: none; padding: 0 20px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .search-btn:active { transform: scale(0.95); }
+
+        .app-container { display: flex; flex-direction: column; gap: 20px; }
         
         .header { text-align: center; padding: 10px 0; }
         .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
@@ -47,12 +56,18 @@
 </head>
 <body>
 
-<div class="app-container" id="app">
-    <div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>
+<div class="main-wrapper">
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="Sök stad (t.ex. Göteborg)...">
+        <button class="search-btn" onclick="triggerSearch()">Sök</button>
+    </div>
+
+    <div class="app-container" id="app">
+        <div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>
+    </div>
 </div>
 
 <script>
-    // SMHI väderkoder till Emojis och text
     const weatherMap = {
         1: { emoji: '☀️', text: 'Klart' },
         2: { emoji: '🌤️', text: 'Lätt molnighet' },
@@ -83,32 +98,44 @@
         27: { emoji: '❄️', text: 'Kraftigt snöfall' }
     };
 
-    // Hjälpfunktion för att plocka ut rätt värde ur SMHIs krångliga dataformat
+    // Ny sökfunktion som visar det önskade felmeddelandet
+    function triggerSearch() {
+        const query = document.getElementById('searchInput').value.trim();
+        if(!query) return; // Gör inget om fältet är tomt
+        
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="loading" style="color:#ef4444; font-weight:bold; margin-top:20px;">
+                (kunde inte hämta smhi data)
+            </div>
+            <button class="btn-refresh" onclick="initApp()">Gå tillbaka till nuvarande plats</button>
+        `;
+    }
+
+    // Gör så att man kan trycka på "Enter" på tangentbordet för att söka
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') triggerSearch();
+    });
+
     function getParam(parameters, name) {
         const param = parameters.find(p => p.name === name);
         return param ? param.values[0] : 0;
     }
 
-    // Formatera tid från "2023-10-15T14:00:00Z" till "14:00"
     function formatTime(dateString) {
         const date = new Date(dateString);
         return date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Bygg hela gränssnittet när vi har fått datan
     function renderApp(data, isFallback) {
         const app = document.getElementById('app');
-        
-        // Nuvarande väder (första värdet i listan)
         const current = data.timeSeries[0];
         const temp = getParam(current.parameters, 't');
         const wind = getParam(current.parameters, 'ws');
         const weatherCode = getParam(current.parameters, 'Wsymb2');
         const weatherInfo = weatherMap[weatherCode] || { emoji: '❓', text: 'Okänt' };
 
-        // Skapa HTML för 24-timmars prognosen
         let forecastHTML = '';
-        // Vi hoppar över det allra första värdet (index 0) eftersom det är nu, och tar de kommande 24
         for(let i = 1; i <= 24; i++) {
             if(!data.timeSeries[i]) break;
             const fData = data.timeSeries[i];
@@ -153,10 +180,8 @@
         `;
     }
 
-    // Hämta väder från SMHI
     async function fetchWeather(lat, lon, isFallback) {
         try {
-            // SMHI kräver att lat/lon har max 6 decimaler
             const safeLat = lat.toFixed(4);
             const safeLon = lon.toFixed(4);
             const url = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${safeLon}/lat/${safeLat}/data.json`;
@@ -170,29 +195,26 @@
         }
     }
 
-    // Starta appen och be om plats
     function initApp() {
+        // Töm sökfältet när vi laddar om
+        document.getElementById('searchInput').value = "";
         document.getElementById('app').innerHTML = `<div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>`;
         
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    // Användaren tillät GPS
                     fetchWeather(position.coords.latitude, position.coords.longitude, false);
                 },
                 (error) => {
-                    // Användaren nekade GPS eller det blev fel - använd Stockholm som fallback
                     fetchWeather(59.3293, 18.0686, true);
                 },
-                { timeout: 10000 } // Ge upp GPS efter 10 sekunder
+                { timeout: 10000 }
             );
         } else {
-            // Webbläsaren stöder inte GPS
             fetchWeather(59.3293, 18.0686, true);
         }
     }
 
-    // Kör igång!
     window.onload = initApp;
 </script>
 </body>
