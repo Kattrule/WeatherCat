@@ -3,285 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperVäder PWA - Dark Mode</title>
+    <title>SuperVäder PWA - Pro Edition</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e293b">
+    <meta name="theme-color" content="#0f172a">
     <style>
         :root {
-            --bg-color: #0f172a; /* Mörkblå/grå bakgrund */
-            --card-bg: #1e293b;  /* Lite ljusare mörkblå för kortet */
-            --text-main: #f8fafc; /* Vit text */
-            --text-sub: #94a3b8;  /* Grå text för detaljer */
-            --primary: #38bdf8;   /* Ljusblå accentfärg */
-            --success: #34d399;   /* Grön färg för status */
-            --warning: #fbbf24;   /* Gul färg om något API är nere */
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --item-bg: #111827;
         }
         
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
-            display: block;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .container { 
-            max-width: 500px; 
-            width: 100%; 
-            margin: 0 auto;
+        .container { max-width: 500px; width: 100%; margin: 0 auto; }
+
+        /* SÖKRUTA */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid #334155;
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 16px;
+        }
+        .search-box button {
+            width: auto;
+            padding: 0 20px;
+            margin-bottom: 0;
+            border-radius: 15px;
         }
 
+        /* HUVUDKORT */
         .card {
             background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             margin-bottom: 20px;
-            text-align: center;
             border: 1px solid #334155;
+            text-align: center;
         }
 
-        h1 {
-            font-size: 22px;
-            margin-top: 0;
-            letter-spacing: 0.5px;
-        }
+        h1, h2 { margin-top: 0; }
+        h1 { font-size: 24px; color: var(--text-main); }
+        h2 { font-size: 18px; color: var(--text-sub); text-align: left; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        
+        .temp { font-size: 64px; font-weight: 700; color: var(--primary); margin: 10px 0; }
+        #avg-condition { font-size: 14px; color: var(--success); margin-bottom: 20px; }
 
-        #location {
-            color: var(--text-sub);
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-
-        .temp { 
-            font-size: 64px; 
-            font-weight: 700; 
-            color: var(--primary); 
-            margin: 10px 0; 
-        }
-
-        #avg-condition {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--success);
-            margin-bottom: 20px;
-        }
-
-        .details { 
-            display: table;
-            width: 100%;
-            margin-top: 25px; 
-        }
-
+        .details { display: flex; gap: 10px; margin-top: 20px; }
         .detail-item { 
-            display: table-cell;
-            background: #111827; 
-            padding: 15px; 
-            border-radius: 12px; 
-            width: 48%;
-            border: 1px solid #1f2937;
+            flex: 1; background: var(--item-bg); padding: 15px; 
+            border-radius: 12px; border: 1px solid #1f2937; 
         }
-        .detail-item:first-child {
-            margin-right: 4%; /* Ger luft mellan blocken */
-        }
-
-        .detail-item span {
-            color: var(--text-sub);
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-item strong {
-            display: block;
-            font-size: 18px;
-            color: var(--text-main);
-            margin-top: 5px;
-        }
+        .detail-item span { color: var(--text-sub); font-size: 13px; text-transform: uppercase; }
+        .detail-item strong { display: block; font-size: 18px; margin-top: 5px; }
 
         button {
-            background: var(--primary);
-            color: #0f172a;
-            border: none;
-            padding: 15px 20px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
-            transition: transform 0.1s, background-color 0.2s;
+            background: var(--primary); color: #0f172a; border: none;
+            padding: 15px 20px; border-radius: 20px; font-size: 16px; font-weight: bold;
+            cursor: pointer; width: 100%; transition: transform 0.1s, background-color 0.2s;
         }
+        button:active { transform: scale(0.98); }
 
-        button:active {
-            transform: scale(0.98);
+        /* TIMPROGNOS (Horisontell scroll) */
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) var(--card-bg);
         }
+        .hourly-item {
+            background: var(--item-bg);
+            min-width: 70px;
+            padding: 15px 10px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #1f2937;
+        }
+        .hourly-time { font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
+        .hourly-temp { font-size: 18px; font-weight: bold; color: var(--text-main); }
+        .hourly-rain { font-size: 11px; color: var(--primary); margin-top: 5px; }
 
-        button:hover {
-            background-color: #7dd3fc;
+        /* DAGSPROGNOS (Lista) */
+        .daily-list { display: flex; flex-direction: column; gap: 10px; }
+        .daily-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--item-bg);
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid #1f2937;
         }
+        .daily-day { font-weight: bold; width: 80px; }
+        .daily-temps { color: var(--text-main); }
+        .daily-temps span { color: var(--text-sub); margin-left: 10px; }
 
-        .source-tag { 
-            font-size: 12px; 
-            color: var(--text-sub); 
-            margin-top: 25px; 
-            line-height: 1.6; 
-            background: #111827;
-            padding: 10px;
-            border-radius: 10px;
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="Sök stad (t.ex. Stockholm)...">
+        <button onclick="searchCity()">Sök</button>
+    </div>
+
     <div class="card">
-        <h1>Trippel-Prognosen</h1>
-        <p id="location">Hämtar din GPS-position...</p>
+        <h1 id="location">Hämtar din position...</h1>
         <div class="temp" id="avg-temp">--°C</div>
-        <p id="avg-condition">Väntar på uppdatering...</p>
+        <p id="avg-condition">Väntar på data...</p>
         
         <div class="details">
             <div class="detail-item">
                 <span>💨 Vind</span>
                 <strong id="avg-wind">-- m/s</strong>
             </div>
-            <div style="display: table-cell; width: 4%;"></div>
             <div class="detail-item">
                 <span>🌧️ Regn</span>
                 <strong id="avg-rain">-- mm</strong>
             </div>
         </div>
+    </div>
 
-        <div class="source-tag" id="source-status">
-            <strong>Normal bas-viktning:</strong><br>
-            🇸🇪 SMHI (45%) | 🇳🇴 Yr (45%) | 🌍 Open-Meteo (10%)
+    <div class="card">
+        <h2>Kommande 24 timmarna</h2>
+        <div class="hourly-scroll" id="hourly-container">
+            Laddar timmar...
         </div>
     </div>
 
-    <button onclick="getWeather()">Uppdatera superprognos</button>
+    <div class="card">
+        <h2>7-dygnsprognos</h2>
+        <div class="daily-list" id="daily-container">
+            Laddar dagar...
+        </div>
+    </div>
+
 </div>
 
 <script>
-    async function getWeather() {
-        if (!navigator.geolocation) {
-            document.getElementById('location').innerText = "Geolokalisering stöds inte.";
-            return;
+    // Startar när sidan laddas - kollar GPS
+    window.onload = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => loadWeatherData(pos.coords.latitude, pos.coords.longitude, "Min position"),
+                () => loadWeatherData(59.3293, 18.0686, "Stockholm (Standard)") // Fallback om GPS nekas
+            );
+        } else {
+            loadWeatherData(59.3293, 18.0686, "Stockholm (Standard)");
         }
+    };
 
-        document.getElementById('avg-condition').innerText = "Anropar servrar...";
-        document.getElementById('avg-condition').style.color = "var(--primary)";
+    // 1. SÖKFUNKTION (Hämtar Lat/Lon från namn)
+    async function searchCity() {
+        const query = document.getElementById('search-input').value;
+        if (!query) return;
 
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const lat = position.coords.latitude.toFixed(4);
-            const lon = position.coords.longitude.toFixed(4);
-            document.getElementById('location').innerText = `Plats: ${parseFloat(lat).toFixed(2)}, ${parseFloat(lon).toFixed(2)}`;
-
-            // Definiera tänkta grundvikter
-            const basVikter = { smhi: 0.45, yr: 0.45, meteo: 0.10 };
+        document.getElementById('location').innerText = "Söker...";
+        
+        try {
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=sv&format=json`);
+            const data = await res.json();
             
-            // Behållare för fungerande data
-            let aktivaKällor = [];
-            let totalViktFungerande = 0;
+            if (data.results && data.results.length > 0) {
+                const city = data.results[0];
+                loadWeatherData(city.latitude, city.longitude, city.name);
+            } else {
+                document.getElementById('location').innerText = "Staden hittades inte.";
+            }
+        } catch (e) {
+            console.error("Geocoding fel", e);
+        }
+    }
 
-            let sumTemp = 0;
-            let sumWind = 0;
-            let sumRain = 0;
+    // 2. HÄMTA OCH BERSÄKNA ALLT VÄDER
+    async function loadWeatherData(lat, lon, locationName) {
+        document.getElementById('location').innerText = locationName;
+        document.getElementById('avg-condition').innerText = "Samlar in data...";
+        
+        lat = parseFloat(lat).toFixed(4);
+        lon = parseFloat(lon).toFixed(4);
 
-            // 1. HÄMTA SMHI DATA
-            try {
-                const res = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
-                if (!res.ok) throw new Error();
+        // --- DEL A: JUST NU (Trippel-API med felhantering) ---
+        const basVikter = { smhi: 0.45, yr: 0.45, meteo: 0.10 };
+        let totalVikt = 0, sumTemp = 0, sumWind = 0, sumRain = 0;
+        let källor = [];
+
+        // SMHI
+        try {
+            const res = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
+            if (res.ok) {
                 const data = await res.json();
                 const current = data.timeSeries[0].parameters;
-                
                 sumTemp += current.find(p => p.name === "t").values[0] * basVikter.smhi;
                 sumWind += current.find(p => p.name === "ws").values[0] * basVikter.smhi;
                 sumRain += current.find(p => p.name === "pmean").values[0] * basVikter.smhi;
-                
-                aktivaKällor.push("SMHI");
-                totalViktFungerande += basVikter.smhi;
-            } catch(e) { console.warn("SMHI kunde inte hämtas."); }
+                totalVikt += basVikter.smhi; källor.push("SMHI");
+            }
+        } catch(e) {}
 
-            // 2. HÄMTA YR DATA
-            try {
-                const res = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, {
-                    headers: { 'User-Agent': 'SuperVaderPWA/2.0' }
-                });
-                if (!res.ok) throw new Error();
+        // Yr (Met.no)
+        try {
+            const res = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, { headers: { 'User-Agent': 'SuperVaderPWA/3.0' }});
+            if (res.ok) {
                 const data = await res.json();
                 const current = data.properties.timeseries[0].data;
-                
                 sumTemp += current.instant.details.air_temperature * basVikter.yr;
                 sumWind += current.instant.details.wind_speed * basVikter.yr;
                 sumRain += (current.next_1_hours ? current.next_1_hours.details.precipitation_amount : 0) * basVikter.yr;
-                
-                aktivaKällor.push("Yr");
-                totalViktFungerande += basVikter.yr;
-            } catch(e) { console.warn("Yr kunde inte hämtas."); }
+                totalVikt += basVikter.yr; källor.push("Yr");
+            }
+        } catch(e) {}
 
-            // 3. HÄMTA OPEN-METEO DATA
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                
-                sumTemp += data.current.temperature_2m * basVikter.meteo;
-                sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo; // km/h -> m/s
-                sumRain += (data.current.rain || 0) * basVikter.meteo;
-                
-                aktivaKällor.push("Open-Meteo");
-                totalViktFungerande += basVikter.meteo;
-            } catch(e) { console.warn("Open-Meteo kunde inte hämtas."); }
+        // --- DEL B: PROGNOSER (Open-Meteo) ---
+        // Hämtar Just nu (ifall de andra fallerar), Timmar (24h) och Dagar (7 dagar) på en gång!
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m&hourly=temperature_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`);
+            const data = await res.json();
 
+            // Kläm in Open-meteo i "Just nu"-kalkylen
+            sumTemp += data.current.temperature_2m * basVikter.meteo;
+            sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo;
+            sumRain += (data.current.rain || 0) * basVikter.meteo;
+            totalVikt += basVikter.meteo; källor.push("O-M");
 
-            // 4. SAMMANSTÄLL OCH RÄKNA OM UTIFRÅN VILKA SOM SVARADE
-            if (aktivaKällor.length === 0) {
-                document.getElementById('avg-condition').innerText = "Hoppsan! Inget API svarade. Kontrollera nätverket.";
-                document.getElementById('avg-condition').style.color = "var(--warning)";
-                return;
+            // RITA UT JUST NU
+            document.getElementById('avg-temp').innerText = `${(sumTemp / totalVikt).toFixed(1)}°C`;
+            document.getElementById('avg-wind').innerText = `${(sumWind / totalVikt).toFixed(1)} m/s`;
+            document.getElementById('avg-rain').innerText = `${(sumRain / totalVikt).toFixed(1)} mm`;
+            document.getElementById('avg-condition').innerText = `Data från: ${källor.join(', ')}`;
+
+            // RITA UT TIMMAR (Kommande 24 timmarna)
+            const hourlyContainer = document.getElementById('hourly-container');
+            hourlyContainer.innerHTML = '';
+            for (let i = 0; i < 24; i++) {
+                const timeString = new Date(data.hourly.time[i]).toLocaleTimeString('sv-SE', { hour: '2-digit', minute:'2-digit' });
+                const temp = Math.round(data.hourly.temperature_2m[i]);
+                const rain = data.hourly.precipitation[i];
+                
+                hourlyContainer.innerHTML += `
+                    <div class="hourly-item">
+                        <div class="hourly-time">${i === 0 ? 'Nu' : timeString}</div>
+                        <div class="hourly-temp">${temp}°</div>
+                        ${rain > 0 ? `<div class="hourly-rain">${rain} mm</div>` : ''}
+                    </div>
+                `;
             }
 
-            // Normalisera vikterna (Gör så att de kvarvarande källorna tillsammans blir 100%)
-            const slutligTemp = (sumTemp / totalViktFungerande).toFixed(1);
-            const slutligWind = (sumWind / totalViktFungerande).toFixed(1);
-            const slutligRain = (sumRain / totalViktFungerande).toFixed(1);
+            // RITA UT DAGAR (7 dagar)
+            const dailyContainer = document.getElementById('daily-container');
+            dailyContainer.innerHTML = '';
+            const veckodagar = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(data.daily.time[i]);
+                const dayName = i === 0 ? 'Idag' : veckodagar[date.getDay()];
+                const maxTemp = Math.round(data.daily.temperature_2m_max[i]);
+                const minTemp = Math.round(data.daily.temperature_2m_min[i]);
+                const rain = data.daily.precipitation_sum[i];
 
-            // 5. UPPDATERA UI
-            document.getElementById('avg-temp').innerText = `${slutligTemp}°C`;
-            document.getElementById('avg-wind').innerText = `${slutligWind} m/s`;
-            document.getElementById('avg-rain').innerText = `${slutligRain} mm`;
-
-            // Statusmeddelande beroende på om alla eller bara några svarade
-            if (aktivaKällor.length === 3) {
-                document.getElementById('avg-condition').innerText = "Trippel-verifierad prognos klar!";
-                document.getElementById('avg-condition').style.color = "var(--success)";
-            } else {
-                document.getElementById('avg-condition').innerText = "Prognos beräknad (vissa källor saknas)";
-                document.getElementById('avg-condition').style.color = "var(--warning)";
+                dailyContainer.innerHTML += `
+                    <div class="daily-item">
+                        <div class="daily-day">${dayName}</div>
+                        <div style="font-size: 13px; color: var(--primary);">${rain > 0 ? `🌧️ ${rain} mm` : ''}</div>
+                        <div class="daily-temps">${maxTemp}° <span>${minTemp}°</span></div>
+                    </div>
+                `;
             }
 
-            // Visa exakt vilka servrar som bygger upp datan just nu
-            document.getElementById('source-status').innerHTML = `
-                <strong>Data beräknad live från:</strong><br>
-                ${aktivaKällor.join(' + ')} (Vikter balanserade)
-            `;
-        });
+        } catch (e) {
+            console.error("Ett fel uppstod vid hämtning av prognoser", e);
+            document.getElementById('avg-condition').innerText = "Nätverksfel.";
+        }
     }
-
-    // Kör automatiskt vid start
-    window.onload = getWeather;
 
     // PWA Service Worker registrering
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
-        });
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(err => console.log(err)));
     }
 </script>
 </body>
