@@ -2,197 +2,154 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VäderKatt</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperVäder PWA 3.0</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#317EFB">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #ffffff;
-            --accent: #38bdf8;
-            --text-muted: #94a3b8;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary: #0088cc;
         }
-
-        * { color: var(--text-color); font-family: Arial, sans-serif; box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; min-height: 100%; background: var(--bg-color); }
-        
-        .main-wrapper { max-width: 500px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        
-        .search-box { display: flex; gap: 10px; }
-        .search-input { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-color); font-size: 1rem; outline: none; }
-        .search-input:focus { border-color: var(--accent); }
-        .search-btn { background: var(--accent); color: var(--bg-color) !important; border: none; padding: 0 20px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-
-        .app-container { display: flex; flex-direction: column; gap: 20px; }
-        
-        .header { text-align: center; padding: 10px 0; }
-        .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
-        .header p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem; }
-
-        .current-weather { background: var(--card-bg); padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
-        .emoji-large { font-size: 5rem; margin: 10px 0; }
-        .temp-large { font-size: 4rem; font-weight: bold; margin: 0; }
-        .weather-desc { color: var(--accent); font-size: 1.2rem; margin-top: 5px; text-transform: capitalize; }
-        
-        .details-row { display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .detail-item { display: flex; flex-direction: column; gap: 5px; font-size: 1rem; }
-        .detail-item span:last-child { color: var(--text-muted); font-size: 0.85rem; }
-
-        .forecast-title { margin: 10px 0 0 0; font-size: 1.2rem; }
-        .forecast-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-        .forecast-scroll::-webkit-scrollbar { display: none; }
-        
-        .forecast-card { background: var(--card-bg); padding: 15px; border-radius: 15px; min-width: 80px; text-align: center; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05); }
-        .forecast-time { color: var(--text-muted); font-size: 0.9rem; }
-        .forecast-emoji { font-size: 1.8rem; }
-        .forecast-temp { font-weight: bold; font-size: 1.1rem; }
-
-        .loading { text-align: center; padding: 50px; font-size: 1.2rem; color: var(--accent); }
-        .btn-refresh { background: var(--accent); color: var(--bg-color) !important; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 10px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { max-width: 500px; width: 100%; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .temp { font-size: 56px; font-weight: bold; color: var(--primary); margin: 15px 0; }
+        .details { display: flex; justify-content: space-around; margin-top: 25px; font-size: 15px; }
+        .detail-item { background: #f8f9fa; padding: 10px 15px; border-radius: 10px; width: 40%; }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0,136,204,0.3);
+        }
+        .source-tag { font-size: 11px; color: #7f8c8d; margin-top: 20px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-<div class="main-wrapper">
-    <div class="search-box">
-        <input type="text" id="searchInput" class="search-input" placeholder="Sök stad i Sverige...">
-        <button class="search-btn" onclick="searchLocation()">Sök</button>
+<div class="container">
+    <div class="card">
+        <h1>Trippel-Prognosen</h1>
+        <p id="location">Hämtar din GPS-position...</p>
+        <div class="temp" id="avg-temp">--°C</div>
+        <p id="avg-condition">Samlar in data från 3 källor...</p>
+        
+        <div class="details">
+            <div class="detail-item">💨 Vind<br><strong id="avg-wind">-- m/s</strong></div>
+            <div class="detail-item">🌧️ Regn<br><strong id="avg-rain">-- mm</strong></div>
+        </div>
+        <div class="source-tag">
+            <strong>Viktning:</strong><br>
+            🇸🇪 SMHI (45%) | 🇳🇴 Yr/Met.no (45%) | 🌍 Open-Meteo (10%)
+        </div>
     </div>
 
-    <div class="app-container" id="app">
-        <div class="loading" id="loadingMsg">Lokaliserar och hämtar väder... 🌍</div>
-    </div>
+    <button onclick="getWeather()">Uppdatera superprognos</button>
 </div>
 
 <script>
-    const weatherMap = {
-        1: { emoji: '☀️', text: 'Klart' }, 2: { emoji: '🌤️', text: 'Lätt molnighet' },
-        3: { emoji: '⛅', text: 'Halvklart' }, 4: { emoji: '🌥️', text: 'Molnigt' },
-        5: { emoji: '☁️', text: 'Mycket moln' }, 6: { emoji: '☁️', text: 'Mulet' },
-        7: { emoji: '🌫️', text: 'Dimma' }, 8: { emoji: '🌦️', text: 'Lätta regnskurar' },
-        9: { emoji: '🌧️', text: 'Regnskurar' }, 10: { emoji: '⛈️', text: 'Kraftiga regnskurar' },
-        11: { emoji: '🌩️', text: 'Åska' }, 12: { emoji: '🌨️', text: 'Snöblandat regn' },
-        13: { emoji: '🌨️', text: 'Snöblandat regn' }, 14: { emoji: '🌨️', text: 'Kraftig snöblandat' },
-        15: { emoji: '❄️', text: 'Lätta snöbyar' }, 16: { emoji: '❄️', text: 'Snöbyar' },
-        17: { emoji: '❄️', text: 'Kraftiga snöbyar' }, 18: { emoji: '🌧️', text: 'Lätt regn' },
-        19: { emoji: '🌧️', text: 'Regn' }, 20: { emoji: '⛈️', text: 'Kraftigt regn' },
-        21: { emoji: '🌩️', text: 'Åska' }, 22: { emoji: '🌨️', text: 'Snöblandat' },
-        23: { emoji: '🌨️', text: 'Snöblandat' }, 24: { emoji: '🌨️', text: 'Kraftig snöblandat' },
-        25: { emoji: '❄️', text: 'Lätt snöfall' }, 26: { emoji: '❄️', text: 'Snöfall' },
-        27: { emoji: '❄️', text: 'Kraftigt snöfall' }
-    };
+    async function getWeather() {
+        if (!navigator.geolocation) {
+            document.getElementById('location').innerText = "Geolokalisering stöds inte.";
+            return;
+        }
 
-    // Funktion för att söka efter en stad
-    async function searchLocation() {
-        const query = document.getElementById('searchInput').value.trim();
-        if(!query) return;
-        
-        document.getElementById('app').innerHTML = `<div class="loading">Söker efter ${query}...</div>`;
+        document.getElementById('avg-condition').innerText = "Anropar servrar...";
 
-        try {
-            // Vi använder OpenStreetMap för att hitta koordinater för staden
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
-            const data = await response.json();
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude.toFixed(4);
+            const lon = position.coords.longitude.toFixed(4);
+            document.getElementById('location').innerText = `Plats: ${parseFloat(lat).toFixed(2)}, ${parseFloat(lon).toFixed(2)}`;
 
-            if (data && data.length > 0) {
-                const lat = parseFloat(data[0].lat);
-                const lon = parseFloat(data[0].lon);
-                const cityName = data[0].display_name.split(',')[0];
-                fetchWeather(lat, lon, false, cityName);
-            } else {
-                showError();
+            try {
+                // 1. HÄMTA DATA FRÅN ALLA 3 API:ER SAMTIDIGT
+                const [resSMHI, resYr, resMeteo] = await Promise.all([
+                    fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`),
+                    fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, {
+                        headers: { 'User-Agent': 'SuperVaderPWA/1.0 github.com/dinprofil' } // Yr kräver en unik User-Agent string
+                    }),
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m`)
+                ]);
+
+                // Konvertera alla svar till JSON
+                const dataSMHI = await resSMHI.json();
+                const dataYr = await resYr.json();
+                const dataMeteo = await resMeteo.json();
+
+                // 2. EXTRAHERA DATA FRÅN SMHI
+                const smhiCurrent = dataSMHI.timeSeries[0].parameters;
+                const smhiTemp = smhiCurrent.find(p => p.name === "t").values[0];
+                const smhiWind = smhiCurrent.find(p => p.name === "ws").values[0];
+                const smhiRain = smhiCurrent.find(p => p.name === "pmean").values[0];
+
+                // 3. EXTRAHERA DATA FRÅN YR (MET.NO)
+                const yrCurrent = dataYr.properties.timeseries[0].data;
+                const yrTemp = yrCurrent.instant.details.air_temperature;
+                const yrWind = yrCurrent.instant.details.wind_speed;
+                const yrRain = yrCurrent.next_1_hours ? yrCurrent.next_1_hours.details.precipitation_amount : 0;
+
+                // 4. EXTRAHERA DATA FRÅN OPEN-METEO
+                const meteoTemp = dataMeteo.current.temperature_2m;
+                const meteoWind = dataMeteo.current.wind_speed_10m / 3.6; // km/h -> m/s
+                const meteoRain = dataMeteo.current.rain || 0;
+
+                // 5. BERÄKNA VIKTAT GENOMSNITT (45% + 45% + 10%)
+                const wSMHI = 0.45;
+                const wYr = 0.45;
+                const wMeteo = 0.10;
+
+                const slutligTemp = ((smhiTemp * wSMHI) + (yrTemp * wYr) + (meteoTemp * wMeteo)).toFixed(1);
+                const slutligWind = ((smhiWind * wSMHI) + (yrWind * wYr) + (meteoWind * wMeteo)).toFixed(1);
+                const slutligRain = ((smhiRain * wSMHI) + (yrRain * wYr) + (meteoRain * wMeteo)).toFixed(1);
+
+                // 6. VISA I APPPEN
+                document.getElementById('avg-temp').innerText = `${slutligTemp}°C`;
+                document.getElementById('avg-wind').innerText = `${slutligWind} m/s`;
+                document.getElementById('avg-rain').innerText = `${slutligRain} mm`;
+                document.getElementById('avg-condition').innerText = "Trippel-verifierad prognos klar!";
+
+                // Konsol-logg för att du ska kunna se vad varje sa
+                console.log(`Källor -> SMHI: ${smhiTemp}°C | Yr: ${yrTemp}°C | Meteo: ${meteoTemp}°C -> Resultat: ${slutligTemp}°C`);
+
+            } catch (error) {
+                console.error("Fel vid hämtning:", error);
+                document.getElementById('avg-condition').innerText = "Ett av API:erna svarade inte. Försök igen.";
             }
-        } catch (e) {
-            showError();
-        }
+        });
     }
 
-    function showError() {
-        document.getElementById('app').innerHTML = `
-            <div class="loading" style="color:#ef4444; font-weight:bold; margin-top:20px;">
-                (kunde inte hämta smhi data)
-            </div>
-            <button class="btn-refresh" onclick="initApp()">Gå tillbaka</button>
-        `;
+    window.onload = getWeather;
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
+        });
     }
-
-    function getParam(parameters, name) {
-        const param = parameters.find(p => p.name === name);
-        return param ? param.values[0] : 0;
-    }
-
-    function renderApp(data, locationName) {
-        const app = document.getElementById('app');
-        const current = data.timeSeries[0];
-        const temp = getParam(current.parameters, 't');
-        const wind = getParam(current.parameters, 'ws');
-        const weatherCode = getParam(current.parameters, 'Wsymb2');
-        const weatherInfo = weatherMap[weatherCode] || { emoji: '❓', text: 'Okänt' };
-
-        let forecastHTML = '';
-        for(let i = 1; i <= 24; i++) {
-            if(!data.timeSeries[i]) break;
-            const fData = data.timeSeries[i];
-            const fTemp = getParam(fData.parameters, 't');
-            const fCode = getParam(fData.parameters, 'Wsymb2');
-            const fEmoji = weatherMap[fCode] ? weatherMap[fCode].emoji : '❓';
-            
-            forecastHTML += `
-                <div class="forecast-card">
-                    <span class="forecast-time">${new Date(fData.validTime).getHours()}:00</span>
-                    <span class="forecast-emoji">${fEmoji}</span>
-                    <span class="forecast-temp">${fTemp}°</span>
-                </div>
-            `;
-        }
-
-        app.innerHTML = `
-            <div class="header">
-                <h1>SMHI Väder</h1>
-                <p>📍 ${locationName}</p>
-            </div>
-            <div class="current-weather">
-                <div class="emoji-large">${weatherInfo.emoji}</div>
-                <h2 class="temp-large">${temp}°</h2>
-                <div class="weather-desc">${weatherInfo.text}</div>
-                <div class="details-row">
-                    <div class="detail-item"><span>${wind} m/s</span><span>Vind</span></div>
-                </div>
-            </div>
-            <h3 class="forecast-title">Kommande 24 timmar</h3>
-            <div class="forecast-scroll">${forecastHTML}</div>
-            <button class="btn-refresh" onclick="initApp()">Min position</button>
-        `;
-    }
-
-    async function fetchWeather(lat, lon, isFallback, locationName = "Lokal prognos") {
-        try {
-            const url = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon.toFixed(4)}/lat/${lat.toFixed(4)}/data.json`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error();
-            const data = await response.json();
-            renderApp(data, locationName);
-        } catch (error) {
-            showError();
-        }
-    }
-
-    function initApp() {
-        document.getElementById('searchInput').value = "";
-        document.getElementById('app').innerHTML = `<div class="loading">Hämtar väder...</div>`;
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (p) => fetchWeather(p.coords.latitude, p.coords.longitude, false, "Din position"),
-                () => fetchWeather(59.3293, 18.0686, true, "Stockholm")
-            );
-        } else {
-            fetchWeather(59.3293, 18.0686, true, "Stockholm");
-        }
-    }
-
-    document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(); });
-    window.onload = initApp;
 </script>
 </body>
 </html>
