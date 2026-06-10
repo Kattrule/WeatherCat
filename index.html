@@ -3,41 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperVäder PWA 3.0</title>
+    <title>SuperVäder PWA - Dark Mode</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#317EFB">
+    <meta name="theme-color" content="#1e293b">
     <style>
         :root {
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --primary: #0088cc;
+            --bg-color: #0f172a; /* Mörkblå/grå bakgrund */
+            --card-bg: #1e293b;  /* Lite ljusare mörkblå för kortet */
+            --text-main: #f8fafc; /* Vit text */
+            --text-sub: #94a3b8;  /* Grå text för detaljer */
+            --primary: #38bdf8;   /* Ljusblå accentfärg */
+            --success: #34d399;   /* Grön färg för status */
+            --warning: #fbbf24;   /* Gul färg om något API är nere */
         }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: block;
         }
-        .container { max-width: 500px; width: 100%; }
+
+        .container { 
+            max-width: 500px; 
+            width: 100%; 
+            margin: 0 auto;
+        }
+
         .card {
             background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             margin-bottom: 20px;
             text-align: center;
+            border: 1px solid #334155;
         }
-        .temp { font-size: 56px; font-weight: bold; color: var(--primary); margin: 15px 0; }
-        .details { display: flex; justify-content: space-around; margin-top: 25px; font-size: 15px; }
-        .detail-item { background: #f8f9fa; padding: 10px 15px; border-radius: 10px; width: 40%; }
+
+        h1 {
+            font-size: 22px;
+            margin-top: 0;
+            letter-spacing: 0.5px;
+        }
+
+        #location {
+            color: var(--text-sub);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .temp { 
+            font-size: 64px; 
+            font-weight: 700; 
+            color: var(--primary); 
+            margin: 10px 0; 
+        }
+
+        #avg-condition {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--success);
+            margin-bottom: 20px;
+        }
+
+        .details { 
+            display: table;
+            width: 100%;
+            margin-top: 25px; 
+        }
+
+        .detail-item { 
+            display: table-cell;
+            background: #111827; 
+            padding: 15px; 
+            border-radius: 12px; 
+            width: 48%;
+            border: 1px solid #1f2937;
+        }
+        .detail-item:first-child {
+            margin-right: 4%; /* Ger luft mellan blocken */
+        }
+
+        .detail-item span {
+            color: var(--text-sub);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-item strong {
+            display: block;
+            font-size: 18px;
+            color: var(--text-main);
+            margin-top: 5px;
+        }
+
         button {
             background: var(--primary);
-            color: white;
+            color: #0f172a;
             border: none;
             padding: 15px 20px;
             border-radius: 25px;
@@ -45,9 +114,27 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            box-shadow: 0 4px 10px rgba(0,136,204,0.3);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+            transition: transform 0.1s, background-color 0.2s;
         }
-        .source-tag { font-size: 11px; color: #7f8c8d; margin-top: 20px; line-height: 1.5; }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:hover {
+            background-color: #7dd3fc;
+        }
+
+        .source-tag { 
+            font-size: 12px; 
+            color: var(--text-sub); 
+            margin-top: 25px; 
+            line-height: 1.6; 
+            background: #111827;
+            padding: 10px;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -57,15 +144,23 @@
         <h1>Trippel-Prognosen</h1>
         <p id="location">Hämtar din GPS-position...</p>
         <div class="temp" id="avg-temp">--°C</div>
-        <p id="avg-condition">Samlar in data från 3 källor...</p>
+        <p id="avg-condition">Väntar på uppdatering...</p>
         
         <div class="details">
-            <div class="detail-item">💨 Vind<br><strong id="avg-wind">-- m/s</strong></div>
-            <div class="detail-item">🌧️ Regn<br><strong id="avg-rain">-- mm</strong></div>
+            <div class="detail-item">
+                <span>💨 Vind</span>
+                <strong id="avg-wind">-- m/s</strong>
+            </div>
+            <div style="display: table-cell; width: 4%;"></div>
+            <div class="detail-item">
+                <span>🌧️ Regn</span>
+                <strong id="avg-rain">-- mm</strong>
+            </div>
         </div>
-        <div class="source-tag">
-            <strong>Viktning:</strong><br>
-            🇸🇪 SMHI (45%) | 🇳🇴 Yr/Met.no (45%) | 🌍 Open-Meteo (10%)
+
+        <div class="source-tag" id="source-status">
+            <strong>Normal bas-viktning:</strong><br>
+            🇸🇪 SMHI (45%) | 🇳🇴 Yr (45%) | 🌍 Open-Meteo (10%)
         </div>
     </div>
 
@@ -80,71 +175,109 @@
         }
 
         document.getElementById('avg-condition').innerText = "Anropar servrar...";
+        document.getElementById('avg-condition').style.color = "var(--primary)";
 
         navigator.geolocation.getCurrentPosition(async (position) => {
             const lat = position.coords.latitude.toFixed(4);
             const lon = position.coords.longitude.toFixed(4);
             document.getElementById('location').innerText = `Plats: ${parseFloat(lat).toFixed(2)}, ${parseFloat(lon).toFixed(2)}`;
 
+            // Definiera tänkta grundvikter
+            const basVikter = { smhi: 0.45, yr: 0.45, meteo: 0.10 };
+            
+            // Behållare för fungerande data
+            let aktivaKällor = [];
+            let totalViktFungerande = 0;
+
+            let sumTemp = 0;
+            let sumWind = 0;
+            let sumRain = 0;
+
+            // 1. HÄMTA SMHI DATA
             try {
-                // 1. HÄMTA DATA FRÅN ALLA 3 API:ER SAMTIDIGT
-                const [resSMHI, resYr, resMeteo] = await Promise.all([
-                    fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`),
-                    fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, {
-                        headers: { 'User-Agent': 'SuperVaderPWA/1.0 github.com/dinprofil' } // Yr kräver en unik User-Agent string
-                    }),
-                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m`)
-                ]);
+                const res = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const current = data.timeSeries[0].parameters;
+                
+                sumTemp += current.find(p => p.name === "t").values[0] * basVikter.smhi;
+                sumWind += current.find(p => p.name === "ws").values[0] * basVikter.smhi;
+                sumRain += current.find(p => p.name === "pmean").values[0] * basVikter.smhi;
+                
+                aktivaKällor.push("SMHI");
+                totalViktFungerande += basVikter.smhi;
+            } catch(e) { console.warn("SMHI kunde inte hämtas."); }
 
-                // Konvertera alla svar till JSON
-                const dataSMHI = await resSMHI.json();
-                const dataYr = await resYr.json();
-                const dataMeteo = await resMeteo.json();
+            // 2. HÄMTA YR DATA
+            try {
+                const res = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, {
+                    headers: { 'User-Agent': 'SuperVaderPWA/2.0' }
+                });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const current = data.properties.timeseries[0].data;
+                
+                sumTemp += current.instant.details.air_temperature * basVikter.yr;
+                sumWind += current.instant.details.wind_speed * basVikter.yr;
+                sumRain += (current.next_1_hours ? current.next_1_hours.details.precipitation_amount : 0) * basVikter.yr;
+                
+                aktivaKällor.push("Yr");
+                totalViktFungerande += basVikter.yr;
+            } catch(e) { console.warn("Yr kunde inte hämtas."); }
 
-                // 2. EXTRAHERA DATA FRÅN SMHI
-                const smhiCurrent = dataSMHI.timeSeries[0].parameters;
-                const smhiTemp = smhiCurrent.find(p => p.name === "t").values[0];
-                const smhiWind = smhiCurrent.find(p => p.name === "ws").values[0];
-                const smhiRain = smhiCurrent.find(p => p.name === "pmean").values[0];
+            // 3. HÄMTA OPEN-METEO DATA
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                
+                sumTemp += data.current.temperature_2m * basVikter.meteo;
+                sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo; // km/h -> m/s
+                sumRain += (data.current.rain || 0) * basVikter.meteo;
+                
+                aktivaKällor.push("Open-Meteo");
+                totalViktFungerande += basVikter.meteo;
+            } catch(e) { console.warn("Open-Meteo kunde inte hämtas."); }
 
-                // 3. EXTRAHERA DATA FRÅN YR (MET.NO)
-                const yrCurrent = dataYr.properties.timeseries[0].data;
-                const yrTemp = yrCurrent.instant.details.air_temperature;
-                const yrWind = yrCurrent.instant.details.wind_speed;
-                const yrRain = yrCurrent.next_1_hours ? yrCurrent.next_1_hours.details.precipitation_amount : 0;
 
-                // 4. EXTRAHERA DATA FRÅN OPEN-METEO
-                const meteoTemp = dataMeteo.current.temperature_2m;
-                const meteoWind = dataMeteo.current.wind_speed_10m / 3.6; // km/h -> m/s
-                const meteoRain = dataMeteo.current.rain || 0;
-
-                // 5. BERÄKNA VIKTAT GENOMSNITT (45% + 45% + 10%)
-                const wSMHI = 0.45;
-                const wYr = 0.45;
-                const wMeteo = 0.10;
-
-                const slutligTemp = ((smhiTemp * wSMHI) + (yrTemp * wYr) + (meteoTemp * wMeteo)).toFixed(1);
-                const slutligWind = ((smhiWind * wSMHI) + (yrWind * wYr) + (meteoWind * wMeteo)).toFixed(1);
-                const slutligRain = ((smhiRain * wSMHI) + (yrRain * wYr) + (meteoRain * wMeteo)).toFixed(1);
-
-                // 6. VISA I APPPEN
-                document.getElementById('avg-temp').innerText = `${slutligTemp}°C`;
-                document.getElementById('avg-wind').innerText = `${slutligWind} m/s`;
-                document.getElementById('avg-rain').innerText = `${slutligRain} mm`;
-                document.getElementById('avg-condition').innerText = "Trippel-verifierad prognos klar!";
-
-                // Konsol-logg för att du ska kunna se vad varje sa
-                console.log(`Källor -> SMHI: ${smhiTemp}°C | Yr: ${yrTemp}°C | Meteo: ${meteoTemp}°C -> Resultat: ${slutligTemp}°C`);
-
-            } catch (error) {
-                console.error("Fel vid hämtning:", error);
-                document.getElementById('avg-condition').innerText = "Ett av API:erna svarade inte. Försök igen.";
+            // 4. SAMMANSTÄLL OCH RÄKNA OM UTIFRÅN VILKA SOM SVARADE
+            if (aktivaKällor.length === 0) {
+                document.getElementById('avg-condition').innerText = "Hoppsan! Inget API svarade. Kontrollera nätverket.";
+                document.getElementById('avg-condition').style.color = "var(--warning)";
+                return;
             }
+
+            // Normalisera vikterna (Gör så att de kvarvarande källorna tillsammans blir 100%)
+            const slutligTemp = (sumTemp / totalViktFungerande).toFixed(1);
+            const slutligWind = (sumWind / totalViktFungerande).toFixed(1);
+            const slutligRain = (sumRain / totalViktFungerande).toFixed(1);
+
+            // 5. UPPDATERA UI
+            document.getElementById('avg-temp').innerText = `${slutligTemp}°C`;
+            document.getElementById('avg-wind').innerText = `${slutligWind} m/s`;
+            document.getElementById('avg-rain').innerText = `${slutligRain} mm`;
+
+            // Statusmeddelande beroende på om alla eller bara några svarade
+            if (aktivaKällor.length === 3) {
+                document.getElementById('avg-condition').innerText = "Trippel-verifierad prognos klar!";
+                document.getElementById('avg-condition').style.color = "var(--success)";
+            } else {
+                document.getElementById('avg-condition').innerText = "Prognos beräknad (vissa källor saknas)";
+                document.getElementById('avg-condition').style.color = "var(--warning)";
+            }
+
+            // Visa exakt vilka servrar som bygger upp datan just nu
+            document.getElementById('source-status').innerHTML = `
+                <strong>Data beräknad live från:</strong><br>
+                ${aktivaKällor.join(' + ')} (Vikter balanserade)
+            `;
         });
     }
 
+    // Kör automatiskt vid start
     window.onload = getWeather;
 
+    // PWA Service Worker registrering
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
