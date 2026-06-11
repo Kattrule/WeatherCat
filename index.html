@@ -99,7 +99,7 @@
         }
         .hourly-item {
             background: var(--item-bg);
-            min-width: 70px;
+            min-width: 90px;
             padding: 15px 10px;
             border-radius: 15px;
             text-align: center;
@@ -107,7 +107,8 @@
         }
         .hourly-time { font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
         .hourly-temp { font-size: 18px; font-weight: bold; color: var(--text-main); }
-        .hourly-rain { font-size: 11px; color: var(--primary); margin-top: 5px; }
+        .hourly-rain-chance { font-size: 12px; color: #60a5fa; margin-top: 5px; font-weight: 500; }
+        .hourly-rain-amount { font-size: 11px; color: var(--text-sub); }
 
         /* DAGSPROGNOS (Lista) */
         .daily-list { display: flex; flex-direction: column; gap: 10px; }
@@ -131,7 +132,7 @@
 <div class="container">
     
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="Sök stad (t.ex. Stockholm)...">
+        <input type="text" id="search-input" placeholder="Sök stad (t.ex. Kristinehamn)...">
         <button onclick="searchCity()">Sök</button>
     </div>
 
@@ -199,85 +200,110 @@
                 document.getElementById('location').innerText = "Staden hittades inte.";
             }
         } catch (e) {
-            console.error("Geocoding fel", e);
+            console.error("Geocoding-fel:", e);
         }
     }
 
-    // 2. HÄMTA OCH BERSÄKNA ALLT VÄDER
+    // 2. HÄMTA OCH BERÄKNA ALLT VÄDER
     async function loadWeatherData(lat, lon, locationName) {
         document.getElementById('location').innerText = locationName;
         document.getElementById('avg-condition').innerText = "Samlar in data...";
         
-        lat = parseFloat(lat).toFixed(4);
-        lon = parseFloat(lon).toFixed(4);
+        // Formatera koordinaterna till strängar för API-anropen
+        const queryLat = parseFloat(lat).toFixed(4);
+        const queryLon = parseFloat(lon).toFixed(4);
+
+        // SMHI kräver strikt 6 decimaler för att inte kasta 400 Bad Request
+        const smhiLat = parseFloat(lat).toFixed(6);
+        const smhiLon = parseFloat(lon).toFixed(6);
 
         // --- DEL A: JUST NU (Trippel-API med felhantering) ---
         const basVikter = { smhi: 0.45, yr: 0.45, meteo: 0.10 };
         let totalVikt = 0, sumTemp = 0, sumWind = 0, sumRain = 0;
         let källor = [];
 
-        // SMHI
+        // SMHI anrop
         try {
-            const res = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
+            const res = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${smhiLon}/lat/${smhiLat}/data.json`);
             if (res.ok) {
                 const data = await res.json();
                 const current = data.timeSeries[0].parameters;
                 sumTemp += current.find(p => p.name === "t").values[0] * basVikter.smhi;
                 sumWind += current.find(p => p.name === "ws").values[0] * basVikter.smhi;
                 sumRain += current.find(p => p.name === "pmean").values[0] * basVikter.smhi;
-                totalVikt += basVikter.smhi; källor.push("SMHI");
+                totalVikt += basVikter.smhi; 
+                källor.push("SMHI");
+            } else {
+                console.warn(`SMHI svarade med status: ${res.status}. (Kan bero på att platsen är utanför SMHI:s täckningsområde).`);
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error("Kunde inte nå SMHI:", e);
+        }
 
-        // Yr (Met.no)
+        // Yr (Met.no) anrop
         try {
-            const res = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`, { headers: { 'User-Agent': 'SuperVaderPWA/3.0' }});
+            const res = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${queryLat}&lon=${queryLon}`, { headers: { 'User-Agent': 'SuperVaderPWA/4.0' }});
             if (res.ok) {
                 const data = await res.json();
                 const current = data.properties.timeseries[0].data;
                 sumTemp += current.instant.details.air_temperature * basVikter.yr;
                 sumWind += current.instant.details.wind_speed * basVikter.yr;
                 sumRain += (current.next_1_hours ? current.next_1_hours.details.precipitation_amount : 0) * basVikter.yr;
-                totalVikt += basVikter.yr; källor.push("Yr");
+                totalVikt += basVikter.yr; 
+                källor.push("Yr");
+            } else {
+                console.warn(`Yr svarade med status: ${res.status}`);
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error("Kunde inte nå Yr:", e);
+        }
 
         // --- DEL B: PROGNOSER (Open-Meteo) ---
-        // Hämtar Just nu (ifall de andra fallerar), Timmar (24h) och Dagar (7 dagar) på en gång!
+        // Nu hämtar vi även "precipitation_probability" för timmarna!
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,wind_speed_10m&hourly=temperature_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`);
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${queryLat}&longitude=${queryLon}&current=temperature_2m,rain,wind_speed_10m&hourly=temperature_2m,precipitation,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`);
             const data = await res.json();
 
-            // Kläm in Open-meteo i "Just nu"-kalkylen
+            // Lägg till Open-Meteo i "Just nu"-kalkylen
             sumTemp += data.current.temperature_2m * basVikter.meteo;
             sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo;
             sumRain += (data.current.rain || 0) * basVikter.meteo;
-            totalVikt += basVikter.meteo; källor.push("O-M");
+            totalVikt += basVikter.meteo; 
+            källor.push("Open-Meteo");
 
-            // RITA UT JUST NU
+            // RENDERA: JUST NU
             document.getElementById('avg-temp').innerText = `${(sumTemp / totalVikt).toFixed(1)}°C`;
             document.getElementById('avg-wind').innerText = `${(sumWind / totalVikt).toFixed(1)} m/s`;
             document.getElementById('avg-rain').innerText = `${(sumRain / totalVikt).toFixed(1)} mm`;
-            document.getElementById('avg-condition').innerText = `Data från: ${källor.join(', ')}`;
+            
+            if (källor.length > 0) {
+                document.getElementById('avg-condition').innerText = `Data beräknad från: ${källor.join(', ')}`;
+                document.getElementById('avg-condition').style.color = "var(--success)";
+            } else {
+                document.getElementById('avg-condition').innerText = "Kunde inte beräkna realtidsdata.";
+                document.getElementById('avg-condition').style.color = "var(--warning)";
+            }
 
-            // RITA UT TIMMAR (Kommande 24 timmarna)
+            // RENDERA: TIMMAR (Kommande 24 timmarna med % risk och mm mängd)
             const hourlyContainer = document.getElementById('hourly-container');
             hourlyContainer.innerHTML = '';
             for (let i = 0; i < 24; i++) {
                 const timeString = new Date(data.hourly.time[i]).toLocaleTimeString('sv-SE', { hour: '2-digit', minute:'2-digit' });
                 const temp = Math.round(data.hourly.temperature_2m[i]);
-                const rain = data.hourly.precipitation[i];
+                const rainAmount = data.hourly.precipitation[i];
+                const rainProb = data.hourly.precipitation_probability[i]; // Hämtar %-risken
                 
                 hourlyContainer.innerHTML += `
                     <div class="hourly-item">
                         <div class="hourly-time">${i === 0 ? 'Nu' : timeString}</div>
                         <div class="hourly-temp">${temp}°</div>
-                        ${rain > 0 ? `<div class="hourly-rain">${rain} mm</div>` : ''}
+                        <div class="hourly-rain-chance">💧 ${rainProb}%</div>
+                        <div class="hourly-rain-amount">${rainAmount > 0 ? `${rainAmount} mm` : '0 mm'}</div>
                     </div>
                 `;
             }
 
-            // RITA UT DAGAR (7 dagar)
+            // RENDERA: DAGAR (7 dagar)
             const dailyContainer = document.getElementById('daily-container');
             dailyContainer.innerHTML = '';
             const veckodagar = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
@@ -299,8 +325,9 @@
             }
 
         } catch (e) {
-            console.error("Ett fel uppstod vid hämtning av prognoser", e);
-            document.getElementById('avg-condition').innerText = "Nätverksfel.";
+            console.error("Ett kritiskt fel uppstod vid hämtning av prognosdata:", e);
+            document.getElementById('avg-condition').innerText = "Kunde inte ladda prognoserna.";
+            document.getElementById('avg-condition').style.color = "var(--warning)";
         }
     }
 
