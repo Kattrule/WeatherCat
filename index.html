@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperVäder PWA - Color Edition</title>
+    <title>SuperVäder PWA - Wind & Color Edition</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e1b4b">
     <style>
         :root {
-            /* Nya färggladare variabler */
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); /* Djup lila till mörkblå */
-            --card-bg: rgba(30, 41, 59, 0.7);  /* Semitransparent mörkblå */
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
             --text-main: #f8fafc;
             --text-sub: #cbd5e1;
-            --primary: #38bdf8;   /* Neonblå */
-            --accent-temp: #f97316; /* Färgstark Orange för temp */
+            --primary: #38bdf8;   
+            --accent-temp: #f97316; 
             --accent-wind: #34d399; /* Mintgrön för vind */
-            --accent-rain: #60a5fa; /* Klarblå för regn */
-            --warning: #f43f5e;   /* Korallröd för fel */
+            --accent-rain: #60a5fa; 
+            --warning: #f43f5e;   
             --item-bg: rgba(15, 23, 42, 0.6);
         }
         
@@ -65,6 +64,9 @@
             border-radius: 15px;
             background: linear-gradient(135deg, #06b6d4, #3b82f6);
             color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
         }
 
         /* VÄDERKORT */
@@ -94,17 +96,8 @@
         .detail-item.wind-box span { color: var(--accent-wind); }
         .detail-item.rain-box span { color: var(--accent-rain); }
         .detail-item span { font-size: 13px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
-        .detail-item strong { display: block; font-size: 20px; margin-top: 5px; }
-
-        button {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
-            color: white; border: none;
-            padding: 16px 20px; border-radius: 20px; font-size: 16px; font-weight: bold;
-            cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-            transition: transform 0.1s, filter 0.2s;
-        }
-        button:active { transform: scale(0.98); }
-        button:hover { filter: brightness(1.2); }
+        .detail-item strong { display: block; font-size: 18px; margin-top: 5px; }
+        .detail-item small { display: block; font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
         /* TIMPROGNOS (Horisontell scroll) */
         .hourly-scroll {
@@ -117,7 +110,7 @@
         }
         .hourly-item {
             background: var(--item-bg);
-            min-width: 90px;
+            min-width: 105px;
             padding: 15px 10px;
             border-radius: 16px;
             text-align: center;
@@ -125,8 +118,8 @@
         }
         .hourly-time { font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
         .hourly-temp { font-size: 19px; font-weight: bold; color: var(--accent-temp); }
-        .hourly-rain-chance { font-size: 12px; color: var(--primary); margin-top: 5px; font-weight: bold; }
-        .hourly-rain-amount { font-size: 11px; color: var(--text-sub); }
+        .hourly-rain { font-size: 12px; color: var(--accent-rain); margin-top: 5px; font-weight: bold; }
+        .hourly-wind { font-size: 12px; color: var(--accent-wind); margin-top: 3px; font-weight: 500; }
 
         /* DAGSPROGNOS (Lista) */
         .daily-list { display: flex; flex-direction: column; gap: 10px; }
@@ -135,16 +128,21 @@
             justify-content: space-between;
             align-items: center;
             background: var(--item-bg);
-            padding: 15px 20px;
+            padding: 15px 15px;
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.05);
         }
-        .daily-day { font-weight: bold; width: 80px; }
-        .daily-rain-info { text-align: center; width: 120px; }
-        .daily-rain-chance { font-size: 12px; color: var(--primary); font-weight: bold; }
+        .daily-day { font-weight: bold; width: 75px; }
+        .daily-rain-info { text-align: center; width: 100px; }
+        .daily-rain-chance { font-size: 12px; color: var(--accent-rain); font-weight: bold; }
         .daily-rain-amount { font-size: 11px; color: var(--text-sub); }
-        .daily-temps { color: var(--accent-temp); font-weight: bold; text-align: right; width: 80px; }
-        .daily-temps span { color: #64748b; font-weight: normal; margin-left: 8px; }
+        
+        .daily-wind-info { text-align: center; width: 110px; font-size: 12px; color: var(--accent-wind); }
+        .daily-wind-speed { font-weight: bold; }
+        .daily-wind-deg { font-size: 11px; color: var(--text-sub); }
+
+        .daily-temps { color: var(--accent-temp); font-weight: bold; text-align: right; width: 75px; }
+        .daily-temps span { color: #64748b; font-weight: normal; margin-left: 5px; }
 
     </style>
 </head>
@@ -153,7 +151,7 @@
 <div class="container">
     
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="Sök stad (t.ex. Karlstad)...">
+        <input type="text" id="search-input" placeholder="Sök stad (t.ex. Göteborg)...">
         <button onclick="searchCity()">Sök</button>
     </div>
 
@@ -166,10 +164,12 @@
             <div class="detail-item wind-box">
                 <span>💨 Vind</span>
                 <strong id="avg-wind">-- m/s</strong>
+                <small id="avg-wind-deg">--° (--)</small>
             </div>
             <div class="detail-item rain-box">
                 <span>🌧️ Regn</span>
                 <strong id="avg-rain">-- mm</strong>
+                <small id="avg-rain-sub">Realtid</small>
             </div>
         </div>
     </div>
@@ -191,6 +191,19 @@
 </div>
 
 <script>
+    // Hjälpfunktion för att göra om grader (vinkel) till väderstreck
+    function getWindText(deg) {
+        if (deg >= 337.5 || deg < 22.5) return 'Nord';
+        if (deg >= 22.5 && deg < 67.5) return 'Nordost';
+        if (deg >= 67.5 && deg < 112.5) return 'Öst';
+        if (deg >= 112.5 && deg < 157.5) return 'Sydost';
+        if (deg >= 157.5 && deg < 202.5) return 'Syd';
+        if (deg >= 202.5 && deg < 247.5) return 'Sydväst';
+        if (deg >= 247.5 && deg < 292.5) return 'Väst';
+        if (deg >= 292.5 && deg < 337.5) return 'Nordväst';
+        return '';
+    }
+
     window.onload = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -232,7 +245,7 @@
         const smhiLon = parseFloat(lon).toFixed(6);
 
         const basVikter = { smhi: 0.45, yr: 0.45, meteo: 0.10 };
-        let totalVikt = 0, sumTemp = 0, sumWind = 0, sumRain = 0;
+        let totalVikt = 0, sumTemp = 0, sumWind = 0, sumWindDeg = 0, sumRain = 0;
         let källor = [];
 
         // SMHI
@@ -243,6 +256,7 @@
                 const current = data.timeSeries[0].parameters;
                 sumTemp += current.find(p => p.name === "t").values[0] * basVikter.smhi;
                 sumWind += current.find(p => p.name === "ws").values[0] * basVikter.smhi;
+                sumWindDeg += current.find(p => p.name === "wd").values[0] * basVikter.smhi;
                 sumRain += current.find(p => p.name === "pmean").values[0] * basVikter.smhi;
                 totalVikt += basVikter.smhi; källor.push("SMHI");
             }
@@ -256,28 +270,34 @@
                 const current = data.properties.timeseries[0].data;
                 sumTemp += current.instant.details.air_temperature * basVikter.yr;
                 sumWind += current.instant.details.wind_speed * basVikter.yr;
+                sumWindDeg += current.instant.details.wind_from_direction * basVikter.yr;
                 sumRain += (current.next_1_hours ? current.next_1_hours.details.precipitation_amount : 0) * basVikter.yr;
                 totalVikt += basVikter.yr; källor.push("Yr");
             }
         } catch(e) {}
 
-        // Open-Meteo (Här hämtar vi nu även "precipitation_probability_max" för dagarna!)
+        // Open-Meteo (Hämtar nu även vindhastighet och vindvinklar för timmar och dagar!)
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${queryLat}&longitude=${queryLon}&current=temperature_2m,rain,wind_speed_10m&hourly=temperature_2m,precipitation,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=auto`);
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${queryLat}&longitude=${queryLon}&current=temperature_2m,rain,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_dominant_wind_direction&timezone=auto`);
             const data = await res.json();
 
             sumTemp += data.current.temperature_2m * basVikter.meteo;
-            sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo;
+            sumWind += (data.current.wind_speed_10m / 3.6) * basVikter.meteo; // km/h -> m/s
+            sumWindDeg += data.current.wind_direction_10m * basVikter.meteo;
             sumRain += (data.current.rain || 0) * basVikter.meteo;
             totalVikt += basVikter.meteo; källor.push("Open-Meteo");
 
-            // JUST NU CARD
-            document.getElementById('avg-temp').innerText = `${(sumTemp / totalVikt).toFixed(1)}°C`;
-            document.getElementById('avg-wind').innerText = `${(sumWind / totalVikt).toFixed(1)} m/s`;
-            document.getElementById('avg-rain').innerText = `${(sumRain / totalVikt).toFixed(1)} mm`;
-            document.getElementById('avg-condition').innerText = `🧬 Super-prognos beräknad via: ${källor.join(', ')}`;
+            // RÄKNA UT OCH VISA: JUST NU
+            const finalWindSpeed = (sumWind / totalVikt).toFixed(1);
+            const finalWindDeg = Math.round(sumWindDeg / totalVikt);
 
-            // TIMMAR (Kommande 24h)
+            document.getElementById('avg-temp').innerText = `${(sumTemp / totalVikt).toFixed(1)}°C`;
+            document.getElementById('avg-wind').innerText = `${finalWindSpeed} m/s`;
+            document.getElementById('avg-wind-deg').innerText = `${finalWindDeg}° (${getWindText(finalWindDeg)})`;
+            document.getElementById('avg-rain').innerText = `${(sumRain / totalVikt).toFixed(1)} mm`;
+            document.getElementById('avg-condition').innerText = `🧬 Precisionsberäknat via: ${källor.join(', ')}`;
+
+            // RENDERA: TIMMAR (Kommande 24h med regn och vind adderat)
             const hourlyContainer = document.getElementById('hourly-container');
             hourlyContainer.innerHTML = '';
             for (let i = 0; i < 24; i++) {
@@ -285,18 +305,20 @@
                 const temp = Math.round(data.hourly.temperature_2m[i]);
                 const rainAmount = data.hourly.precipitation[i];
                 const rainProb = data.hourly.precipitation_probability[i];
+                const windSpeed = (data.hourly.wind_speed_10m[i] / 3.6).toFixed(1); // km/h -> m/s
+                const windDeg = data.hourly.wind_direction_10m[i];
                 
                 hourlyContainer.innerHTML += `
                     <div class="hourly-item">
                         <div class="hourly-time">${i === 0 ? 'Nu' : timeString}</div>
                         <div class="hourly-temp">${temp}°</div>
-                        <div class="hourly-rain-chance">💧 ${rainProb}%</div>
-                        <div class="hourly-rain-amount">${rainAmount > 0 ? `${rainAmount} mm` : '0 mm'}</div>
+                        <div class="hourly-rain">💧 ${rainProb}%<br><span style="font-size:10px; font-weight:normal; color:var(--text-sub);">${rainAmount > 0 ? `${rainAmount}mm` : '0mm'}</span></div>
+                        <div class="hourly-wind">💨 ${windSpeed}<br><span style="font-size:10px; color:var(--text-sub);">${windDeg}°</span></div>
                     </div>
                 `;
             }
 
-            // DAGAR (7 dygn med % risk adderat)
+            // RENDERA: DAGAR (7 dygn med maxvind och dominerande vinkel)
             const dailyContainer = document.getElementById('daily-container');
             dailyContainer.innerHTML = '';
             const veckodagar = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
@@ -307,15 +329,24 @@
                 const maxTemp = Math.round(data.daily.temperature_2m_max[i]);
                 const minTemp = Math.round(data.daily.temperature_2m_min[i]);
                 const dailyRainSum = data.daily.precipitation_sum[i];
-                const dailyRainProb = data.daily.precipitation_probability_max[i]; // Högsta risken under det dygnet
+                const dailyRainProb = data.daily.precipitation_probability_max[i];
+                const maxWind = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); // km/h -> m/s
+                const domWindDeg = data.daily.wind_dominant_wind_direction[i];
 
                 dailyContainer.innerHTML += `
                     <div class="daily-item">
                         <div class="daily-day">${dayName}</div>
+                        
                         <div class="daily-rain-info">
-                            <div class="daily-rain-chance">💧 ${dailyRainProb}% risk</div>
+                            <div class="daily-rain-chance">💧 ${dailyRainProb}%</div>
                             <div class="daily-rain-amount">${dailyRainSum > 0 ? `${dailyRainSum.toFixed(1)} mm` : '0 mm'}</div>
                         </div>
+
+                        <div class="daily-wind-info">
+                            <div class="daily-wind-speed">💨 ${maxWind} m/s</div>
+                            <div class="daily-wind-deg">${domWindDeg}° (${getWindText(domWindDeg)})</div>
+                        </div>
+
                         <div class="daily-temps">${maxTemp}° <span>${minTemp}°</span></div>
                     </div>
                 `;
@@ -323,7 +354,7 @@
 
         } catch (e) {
             console.error(e);
-            document.getElementById('avg-condition').innerText = "Kunde inte ladda all data.";
+            document.getElementById('avg-condition').innerText = "Kunde inte synka alla källor.";
             document.getElementById('avg-condition').style.color = "var(--warning)";
         }
     }
